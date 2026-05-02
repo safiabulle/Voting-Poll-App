@@ -20,9 +20,9 @@ const PollOption = ({ option, onVote, hasVoted, totalVotes }) => {
         </button>
       </div>
 
- <div className="w-full bg-gray-200 h-2 mt-2 rounded">
+ <div className="w-full h-5 mt-3 overflow-hidden rounded-full bg-slate-200 shadow-inner ring-1 ring-slate-300">
         <div
-          className="bg-blue-500 h-2 rounded"
+          className="poll-bar-fill h-full rounded-full transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         ></div>
       </div>
