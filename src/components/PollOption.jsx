@@ -3,31 +3,32 @@ const PollOption = ({ option, onVote, hasVoted, totalVotes }) => {
   ? 0 
   : Math.round((option.votes / totalVotes) * 100);
 
-  return (
-    <div className="flex items-center gap-3">
+   return (
+    <div className="mb-4">
+    <div className="flex justify-between items-center">
       <p>
         {option.name} - {option.votes} votes ({percentage}%)
       </p>
 
-      <div style={{ background: "#eee", width: "100%", height: "10px" }}>
-  <div 
-    style={{
-      width: `${percentage}%`,
-      height: "100%",
-      background: "blue"
-    }}
-  ></div>
-</div>
 
-      <button 
-        onClick={() => onVote(option.id)} 
-        disabled={hasVoted}
-        className="bg-blue-500 text-white px-3 py-1 rounded disabled:bg-gray-400"
-      >
-        Vote
-      </button>
+    <button
+          onClick={() => onVote(option.id)}
+          disabled={hasVoted}
+          className="bg-blue-500 text-white px-3 py-1 rounded disabled:bg-gray-400"
+        >
+          Vote
+        </button>
+      </div>
+
+ <div className="w-full bg-gray-200 h-2 mt-2 rounded">
+        <div
+          className="bg-blue-500 h-2 rounded"
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
+
     </div>
   );
 };
-
+ 
 export default PollOption;

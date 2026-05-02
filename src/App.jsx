@@ -3,6 +3,7 @@ import PollList from "./components/PollList";
 import PollForm from "./components/PollForm";
 
 function App() {
+  // Poll options (loaded from localStorage if available)
   const [options, setOptions] = useState(() => {
   const savedOptions = localStorage.getItem("pollOptions");
 
@@ -29,7 +30,7 @@ function App() {
   );
   setHasVoted(true);
 };
-
+// Reset all votes back to zero
 const handleReset = () => {
   setOptions(prevOptions =>
     prevOptions.map(option => ({
@@ -41,6 +42,7 @@ const handleReset = () => {
   setHasVoted(false);
 };
 
+//Add a new poll option from user input
 const handleAddOption = (name) => {
   setOptions(prevOptions => [
     ...prevOptions,
@@ -51,17 +53,18 @@ const handleAddOption = (name) => {
     }
   ]);
 };
-
+// Save options to localStorage whenever they change
 useEffect(() => {
   localStorage.setItem("pollOptions", JSON.stringify(options));
 }, [options]);
 
+// Calculate total votes for percentage display
 const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
 
   return (
-    <div>
-      <h1>Voting Poll App</h1>
-      
+    <div className="max-w-xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Voting Poll App</h1>
+
     <PollForm onAddOption={handleAddOption} />
 
       <PollList options={options} 
@@ -69,7 +72,10 @@ const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
       hasVoted={hasVoted}
       totalVotes={totalVotes}
       />
-      <button onClick={handleReset}>
+      <button 
+      onClick={handleReset}
+      className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+      >
       Reset Votes
       </button>
     </div>
