@@ -42,6 +42,14 @@ const handleReset = () => {
   setHasVoted(false);
 };
 
+// delete poll option
+const handleDeleteOption = (id) => {
+  setOptions(prevOptions =>
+    prevOptions.filter(option => option.id !== id)
+  );
+};
+
+
 //Add a new poll option from user input
 const handleAddOption = (name) => {
   setOptions(prevOptions => [
@@ -69,6 +77,7 @@ const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
 
       <PollList options={options} 
       onVote={handleVote}
+      onDelete={handleDeleteOption}
       hasVoted={hasVoted}
       totalVotes={totalVotes}
       />
@@ -78,6 +87,7 @@ const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
       >
       Reset Votes
       </button>
+     
     </div>
   );
 }

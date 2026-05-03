@@ -1,6 +1,6 @@
 import PollOption from "./PollOption";
 
-const PollList = ({ options, onVote, hasVoted, totalVotes  }) => {
+const PollList = ({ options, onVote, onDelete, hasVoted, totalVotes  }) => {
 
   return (
     <div>
@@ -9,6 +9,7 @@ const PollList = ({ options, onVote, hasVoted, totalVotes  }) => {
           key={option.id}
           option={option}
           onVote={onVote}
+          onDelete={onDelete}
           hasVoted={hasVoted}
            totalVotes={totalVotes}
         />

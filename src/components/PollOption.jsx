@@ -1,4 +1,4 @@
-const PollOption = ({ option, onVote, hasVoted, totalVotes }) => {
+const PollOption = ({ option, onVote, onDelete, hasVoted, totalVotes }) => {
    const percentage = totalVotes === 0 
   ? 0 
   : Math.round((option.votes / totalVotes) * 100);
@@ -18,6 +18,13 @@ const PollOption = ({ option, onVote, hasVoted, totalVotes }) => {
         >
           Vote
         </button>
+
+        <button
+      onClick={() => onDelete(option.id)}
+      className="bg-red-500 text-white px-3 py-1 rounded"
+       >
+       Delete
+      </button>
       </div>
 
  <div className="w-full h-5 mt-3 overflow-hidden rounded-full bg-slate-200 shadow-inner ring-1 ring-slate-300">
