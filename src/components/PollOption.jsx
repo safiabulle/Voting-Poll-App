@@ -1,43 +1,160 @@
-const PollOption = ({ option, onVote, onDelete, hasVoted, totalVotes }) => {
-   const percentage = totalVotes === 0 
-  ? 0 
-  : Math.round((option.votes / totalVotes) * 100);
+import { useState } from 'react'
 
-   return (
-    <div className="mb-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-        <p className="text-slate-900 font-bold text-base sm:text-lg flex-1">
-          {option.name}
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onVote(option.id)}
-            disabled={hasVoted}
-            className="bg-blue-600 text-white px-3 sm:px-4 py-2 font-black uppercase tracking-wide border-2 border-blue-600 transform active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] text-xs sm:text-sm"
+/**
+ * PollOption
+ * Displays a single poll option with its vote count, progress bar, and vote button.
+ * No state is managed here — all data flows in via props.
+ *
+ * Props:
+ *  - option     {Object}   { id, label, votes }
+ *  - totalVotes {number}   Total votes across all options
+ *  - hasVoted   {boolean}  If true, Vote button is disabled
+ *  - isLeader   {boolean}  Highlights the leading option
+ *  - rank       {number}   Rank position (1 = top)
+ *  - onVote     {Function} Called with option.id when button is clicked
+ * - onDelete   {Function} Called with option.id when delete action is triggered (if implemented)
+ */
+function PollOption({ option, totalVotes, hasVoted, isLeader, rank, onVote, onDelete }) {
+  const [justVoted, setJustVoted] = useState(false)
+
+  const percentage =
+    totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0
+
+  const handleVoteClick = () => {
+    if (hasVoted) return
+    setJustVoted(true)
+    onVote(option.id)
+    // Remove pulse class after animation
+    setTimeout(() => setJustVoted(false), 400)
+  }
+
+  return (
+    <div
+      className={`fade-in-up rounded-2xl p-4 sm:p-5 transition-all duration-300 ${
+        isLeader ? 'shadow-md' : ''
+      }`}
+      style={{
+        background: isLeader
+          ? 'linear-gradient(135deg, #fff9f0 0%, #ffffff 100%)'
+          : 'var(--card-bg)',
+        border: isLeader
+          ? '1.5px solid rgba(232, 166, 40, 0.4)'
+          : '1.5px solid var(--border)',
+        animationDelay: `${(rank - 1) * 60}ms`,
+      }}
+    >
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Rank badge */}
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-display font-bold shrink-0"
+          style={{
+            background: isLeader ? 'var(--gold)' : '#f0ede6',
+            color: isLeader ? '#fff' : '#9c9890',
+          }}
+        >
+          {rank}
+        </div>
+
+        {/* Label + bar */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-2 gap-2">
+            <span
+              className="font-display font-semibold text-base sm:text-lg truncate"
+              style={{ color: 'var(--ink)' }}
+            >
+              {option.label}
+              {isLeader && option.votes > 0 && (
+                <span
+                  className="ml-2 text-xs px-1.5 py-0.5 rounded-full font-medium"
+                  style={{
+                    background: 'rgba(232, 166, 40, 0.15)',
+                    color: 'var(--gold)',
+                  }}
+                >
+                  Leading
+                </span>
+              )}
+            </span>
+
+            {/* Vote count + percentage */}
+            <div className="text-right shrink-0">
+              <span
+                className="font-display font-bold text-base sm:text-lg"
+                style={{ color: isLeader ? 'var(--coral)' : 'var(--ink)' }}
+              >
+                {percentage}%
+              </span>
+              <p className="text-xs" style={{ color: '#9c9890' }}>
+                {option.votes} {option.votes === 1 ? 'vote' : 'votes'}
+              </p>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div
+            className="w-full rounded-full overflow-hidden"
+            style={{ height: '8px', background: '#f0ede6' }}
           >
-            Vote
-          </button>
+            <div
+              className="progress-bar h-full rounded-full"
+              style={{
+                width: `${percentage}%`,
+                background: isLeader
+                  ? 'linear-gradient(90deg, var(--coral), var(--gold))'
+                  : 'var(--teal)',
+              }}
+            />
+          </div>
+        </div>
 
+        {/* Vote button */}
+        <button
+          onClick={handleVoteClick}
+          disabled={hasVoted}
+          className={`
+            shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200
+            ${justVoted ? 'vote-pulse' : ''}
+            ${
+              hasVoted
+                ? 'cursor-not-allowed opacity-40'
+                : 'cursor-pointer hover:opacity-90 active:scale-95 hover:shadow-md'
+            }
+          `}
+          style={{
+            background: hasVoted ? '#e0ddd6' : 'var(--teal)',
+            color: hasVoted ? '#9c9890' : '#ffffff',
+          }}
+          title={hasVoted ? 'You have already voted' : `Vote for ${option.label}`}
+        >
+          {hasVoted ? (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          ) : (
+            'Vote'
+          )}
+        </button>
+        
+        {/* Delete button (optional, can be implemented if onDelete is provided) */}
+        {onDelete && (
           <button
             onClick={() => onDelete(option.id)}
-            className="bg-yellow-600 text-slate-900 px-3 sm:px-4 py-2 font-black uppercase tracking-wide border-2 border-yellow-600 transform active:scale-95 transition-all duration-200 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] text-xs sm:text-sm"
+            className="ml-2 shrink-0 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80 active:scale-95"
+            style={{
+              background: 'transparent',
+              border: '1.5px solid var(--border)',
+              color: '#6b6860',
+            }}
+            title={`Delete ${option.label}`}
           >
-            Delete
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
           </button>
-        </div>
-      </div>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs sm:text-sm font-bold text-slate-600">{option.votes} votes</span>
-        <span className="text-xs sm:text-sm font-bold text-slate-600">{percentage}%</span>
-      </div>
-      <div className="w-full bg-slate-200 h-6 rounded-none border-2 border-slate-400 overflow-hidden">
-        <div
-          className="h-full bg-blue-600 transition-all duration-500 ease-out"
-          style={{ width: `${percentage}%` }}
-        ></div>
+        )}
       </div>
     </div>
-  );
-};
- 
-export default PollOption;
+  )
+}
+
+export default PollOption
