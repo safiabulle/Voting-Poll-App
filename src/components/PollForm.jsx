@@ -13,18 +13,18 @@ const PollForm = ({ onAddOption }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row mb-6">
       <input
         type="text"
         placeholder="Enter poll option"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        className="border px-2 py-1 rounded w-full"
+        className="border-2 border-yellow-600 px-4 py-2 bg-white text-slate-900 font-bold placeholder-slate-500 w-full sm:flex-1 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm sm:text-base"
       />
 
       <button
         type="submit"
-        className="rounded-lg bg-green-500 px-3 py-1 text-white shadow-sm transition-colors duration-200 hover:bg-green-600 active:bg-green-700"
+        className="bg-blue-600 text-white px-4 sm:px-6 py-2 font-black uppercase tracking-wide border-2 border-blue-600 transform active:scale-95 transition-all duration-200 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.8)] text-sm sm:text-base"
       >
         Add
       </button>

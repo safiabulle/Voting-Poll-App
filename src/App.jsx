@@ -3,9 +3,9 @@ import PollList from "./components/PollList";
 import PollForm from "./components/PollForm";
 
 const defaultOptions = [
-  { id: 1, name: "React", votes: 0 },
-  { id: 2, name: "Vue", votes: 0 },
-  { id: 3, name: "Angular", votes: 0 },
+  { id: 1, name: "Manchester United", votes: 0 },
+  { id: 2, name: "Liverpool", votes: 0 },
+  { id: 3, name: "3-2", votes: 0 },
 ];
 
 function App() {
@@ -72,25 +72,26 @@ function App() {
   const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Voting Poll App</h1>
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-200 flex flex-col items-center pt-6 px-4 pb-12">
+      <h1 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-wider text-blue-600 mb-8 md:mb-12 italic" style={{ textShadow: '6px 6px 0px rgba(0,0,0,0.8), -2px -2px 0px rgba(37, 99, 235, 0.2)', transform: 'skewX(-5deg)' }}>POLL LAB</h1>
+      
+      <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg bg-white text-slate-900 p-4 sm:p-6 md:p-10 rounded-none border-4 border-yellow-600 shadow-[10px_10px_0px_0px_rgba(0,0,0,0.6)]">
+        <PollForm onAddOption={handleAddOption} />
 
-      <PollForm onAddOption={handleAddOption} />
-
-      <PollList
-        options={options}
-        onVote={handleVote}
-        onDelete={handleDeleteOption}
-        hasVoted={hasVoted}
-        totalVotes={totalVotes}
-      />
-      <button
-        onClick={handleReset}
-        className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-      >
-        Reset Poll
-      </button>
-
+        <PollList
+          options={options}
+          onVote={handleVote}
+          onDelete={handleDeleteOption}
+          hasVoted={hasVoted}
+          totalVotes={totalVotes}
+        />
+        <button
+          onClick={handleReset}
+          className="w-full mt-6 bg-blue-600 text-white px-4 py-3 font-black uppercase tracking-wide border-2 border-blue-600 transform active:scale-95 transition-all duration-200 hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,0.8)] text-sm sm:text-base md:text-lg"
+        >
+          Reset Poll
+        </button>
+      </div>
     </div>
   );
 }
