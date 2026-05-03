@@ -11,8 +11,10 @@ The Voting Poll App is a simple web application built with React that allows use
 
 ## Installation
 #### Clone the repository
+```
 bash
 git clone git@github.com:safiabulle/Voting-Poll-App.git
+```
 
 ### Navigate into the project folder
 cd voting-poll-app
