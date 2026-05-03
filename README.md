@@ -1,18 +1,27 @@
-# React + Vite
+### Voting Poll App — React Mini-Project
+A simple, responsive voting application built with React, Vite, and Tailwind CSS. This project demonstrates state management, props drilling, and data persistence using localStorage.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+#### Features
 
-Currently, two official plugins are available:
+### Create Polls: Add custom options to the voting list.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Live Results: View real-time vote counts and dynamic percentage progress bars.
+Single-Vote Logic: Users are restricted to one vote; buttons disable automatically after selection.
+Data Persistence: Poll data and voting status survive page refreshes.
+Reset Capability: Clear all data and votes to start fresh.
+Responsive Design: Fully optimized for mobile, tablet, and desktop views.
 
-## React Compiler
+ ### Tech Stack
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Framework: React (Vite)
+Styling: Tailwind CSS
+State Management: React Hooks (useState, useEffect)
+Storage: Web Storage API (localStorage)
 
-Note: This will impact Vite dev & build performances.
+### Component Structure
 
-## Expanding the ESLint configuration
+App.jsx: The central hub. Manages global state (polls, hasVoted) and handles core logic.
+PollForm.jsx: Form component for adding new poll options.
+PollList.jsx: Container that calculates total votes and maps through the options.
+PollOption.jsx: Individual item display featuring the vote button and progress bar.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
