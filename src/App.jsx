@@ -68,7 +68,7 @@ function App() {
     localStorage.setItem("hasVoted", String(hasVoted));
   }, [hasVoted]);
 
-  // Calculate total votes for percentage display.
+  // Calculate votes for percentage display.
   const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
 
   return (
