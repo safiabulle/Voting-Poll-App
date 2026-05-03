@@ -21,7 +21,7 @@ const PollOption = ({ option, onVote, onDelete, hasVoted, totalVotes }) => {
 
         <button
       onClick={() => onDelete(option.id)}
-      className="bg-red-500 text-white px-3 py-1 rounded"
+      className="rounded-lg bg-red-500 px-3 py-1 text-white shadow-sm transition-colors duration-200 hover:bg-red-600 active:bg-red-700"
        >
        Delete
       </button>
