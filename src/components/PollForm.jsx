@@ -24,7 +24,7 @@ const PollForm = ({ onAddOption }) => {
 
       <button
         type="submit"
-        className="bg-green-500 text-white px-3 py-1 rounded"
+        className="rounded-lg bg-green-500 px-3 py-1 text-white shadow-sm transition-colors duration-200 hover:bg-green-600 active:bg-green-700"
       >
         Add
       </button>

@@ -14,7 +14,7 @@ const PollOption = ({ option, onVote, onDelete, hasVoted, totalVotes }) => {
     <button
           onClick={() => onVote(option.id)}
           disabled={hasVoted}
-          className="bg-blue-500 text-white px-3 py-1 rounded disabled:bg-gray-400"
+          className="rounded-lg bg-blue-500 px-3 py-1 text-white shadow-sm transition-colors duration-200 hover:bg-blue-600 active:bg-blue-700 disabled:bg-gray-400 disabled:shadow-none disabled:hover:bg-gray-400"
         >
           Vote
         </button>
