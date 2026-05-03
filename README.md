@@ -1,5 +1,5 @@
 # Voting Poll App — React Mini-Project
-A simple, responsive voting application built with React, Vite, and Tailwind CSS. This project demonstrates state management, props drilling, and data persistence using localStorage.
+A simple, responsive voting application built with React, Vite, and Tailwind CSS. 
 
 ## Features
 
@@ -18,8 +18,11 @@ Responsive Design: Fully optimized for mobile, tablet, and desktop views.
  ### Tech Stack
 
 Framework: React (Vite)
+
 Styling: Tailwind CSS
+
 State Management: React Hooks (useState, useEffect)
+
 Storage: Web Storage API (localStorage)
 
 ### Component Structure
@@ -46,9 +49,9 @@ Safia Bulle: Project initialization, Vite setup, and App.jsx state architecture.
 
 Jayson Gicuki and Gabriel Ngige: PollForm.jsx implementation and input handling logic.
 
-Jaden Afrika and Linda Marani: PollList.jsx & PollOption.jsx components and Tailwind styling.
+ Keith Mutugi and Linda Marani: PollList.jsx & PollOption.jsx components and  README documentation.
 
-Lenox Javana and Keith Muturi: LocalStorage integration, Reset functionality, and README documentation.
+Lenox Javana and Jaden Afrika: LocalStorage integration, Reset functionality, and Tailwind styling.
 
 
 ### License
