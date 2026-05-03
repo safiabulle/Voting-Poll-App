@@ -1,53 +1,53 @@
-# Voting Poll App — React Mini-Project
-A simple, responsive voting application built with React, Vite, and Tailwind CSS. 
+# Voting Poll App
 
-## Features
+## Project Description
+The Voting Poll App is a simple web application built with React that allows users to create poll options, vote for their preferred option, and manage poll items dynamically. Users can add new options, vote in real time, and remove unwanted options.
 
-### Create Polls: Add custom options to the voting list.
+## Table of Contents
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
 
-Live Results: View real-time vote counts and dynamic percentage progress bars.
-
-Single-Vote Logic: Users are restricted to one vote; buttons disable automatically after selection.
-
-Data Persistence: Poll data and voting status survive page refreshes.
-
-Reset Capability: Clear all data and votes to start fresh.
-
-Responsive Design: Fully optimized for mobile, tablet, and desktop views.
-
-### Component Structure
-
-App.jsx: The central hub. Manages the main functions and handles core logic.
-
-PollForm.jsx: Form component for adding new poll options.
-
-PollList.jsx: Container that calculates total votes and maps through the options.
-
-PollOption.jsx: Individual item display featuring the vote button and progress bar.
-
-### Setup Instructions
-
-Clone the repository:
+## Installation
+#### Clone the repository
+bash
 git clone git@github.com:safiabulle/Voting-Poll-App.git
+
+### Navigate into the project folder
 cd voting-poll-app
 
-Install dependencies:
+### Install dependencies
 npm install
-```
 
-Run the development server:
+### Start development server
+
+
+ ## Usage
+To run the project, use the following command:
+bash
 npm run dev
 
-### Team Members & Contributions
-Safia Bulle: Project initialization, Vite setup, and App.jsx state architecture.
+## Features
+- Add new poll options
+- Vote for any option
+- Remove poll options
+- Live vote count updates
+- Interactive and responsive UI
+- Built with React functional components and hooks
 
-Jayson Gichuki and Gabriel Ngige: PollForm.jsx implementation and input handling logic.
+## Team Members
+Safia Bulle, Jayson Gichuki, Keith Mutugi, Gabriele Ngugi, Lenox Javana,Jaden Afrika, Linda Marani.
 
-Keith Mutugi and Linda Marani: PollList.jsx & PollOption.jsx components and  README documentation.
+## Contributing
+Contributions are welcome!
 
-Lenox Javana and Jaden Afrika: LocalStorage integration, Reset functionality, and Tailwind styling.
+If you want to improve this project:
+1. Fork the repository.
+2. Create a new branch: git checkout -b feature-name.
+3. Make your changes.
+4. Push your branch: git push origin feature-name.
+5. Create a pull request.
 
-
-### License
-This project is open-source and available under the MIT License.
-
+## License
+This project is currently not licenced
