@@ -39,7 +39,7 @@ npm run dev
 - Built with React functional components and hooks
 
 ## Team Members
-Safia Bulle, Jayson Gichuki, Keith Mutugi, Gabriele Ngugi, Lenox Javana,Jaden Afrika, Linda Marani.
+Safia Bulle, Jayson Gichuki, Keith Mutugi, Gabriele Ngugi, Lenox Javana,Jaden Afrika, Jason Mumo, Linda Marani.
 
 ## Contributing
 Contributions are welcome!
