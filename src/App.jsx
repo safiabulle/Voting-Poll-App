@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import PollForm from './components/PollForm'
 import PollList from './components/PollList'
+import History from './components/History'
 import Register from './components/Register'
 import { auth, db } from './firebase'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
@@ -34,6 +35,8 @@ function App() {
   const [pollLoading, setPollLoading] = useState(true)
 
   const [options, setOptions] = useState([])
+  const [currentPage, setCurrentPage] = useState('poll')
+  const [history, setHistory] = useState([])
 
   // Track whether the signed-in user already voted.
   const [hasVoted, setHasVoted] = useState(false)
@@ -46,6 +49,18 @@ function App() {
     })
 
     return unsubscribe
+  }, [])
+
+  useEffect(() => {
+    const storedHistory = localStorage.getItem('votePollAppHistory')
+
+    if (storedHistory) {
+      try {
+        setHistory(JSON.parse(storedHistory))
+      } catch (error) {
+        console.warn('Could not parse stored history', error)
+      }
+    }
   }, [])
 
   async function seedDefaultOptions() {
@@ -193,6 +208,41 @@ function App() {
     await batch.commit()
   }
 
+  const handleFinishPoll = async () => {
+    if (options.length === 0) {
+      setAuthMessage('No poll options available to finish.')
+      return
+    }
+
+    const sortedOptions = [...options].sort((a, b) => b.votes - a.votes)
+    const winner = sortedOptions[0]
+
+    if (!winner) {
+      setAuthMessage('Unable to determine the winner.')
+      return
+    }
+
+    const winnerRecord = {
+      title: 'Frontend Framework Poll',
+      winnerName: winner.label,
+      timestamp: Date.now(),
+    }
+
+    try {
+      setAuthMessage('')
+      setHistory((previousHistory) => {
+        const nextHistory = [winnerRecord, ...previousHistory]
+        localStorage.setItem('votePollAppHistory', JSON.stringify(nextHistory))
+        return nextHistory
+      })
+      await handleReset()
+      setHasVoted(false)
+      setCurrentPage('history')
+    } catch (error) {
+      setAuthMessage(error.message || 'Could not finish the poll.')
+    }
+  }
+
   const handleSignOut = async () => {
     await signOut(auth)
     setAuthMessage('')
@@ -249,15 +299,24 @@ function App() {
               </span>
             </div>
 
-            {user && (
+            <div className="flex items-center gap-3">
               <button
-                onClick={handleSignOut}
+                onClick={() => setCurrentPage('history')}
                 className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80"
                 style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
               >
-                Sign out
+                History
               </button>
-            )}
+              {user && (
+                <button
+                  onClick={handleSignOut}
+                  className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
+                >
+                  Sign out
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -279,87 +338,107 @@ function App() {
           </p>
         </div>
 
-        {!authLoading && !user && (
-          <div className="mb-8">
-            <Register />
-          </div>
+        {currentPage === 'history' ? (
+          <History history={history} onBack={() => setCurrentPage('poll')} />
+        ) : (
+          <>
+            {!authLoading && !user && (
+              <div className="mb-8">
+                <Register />
+              </div>
+            )}
+
+            {authMessage && (
+              <div
+                className="mb-6 px-4 py-3 rounded-xl text-sm font-medium fade-in-up"
+                style={{
+                  background: 'rgba(220, 38, 38, 0.08)',
+                  border: '1px solid rgba(220, 38, 38, 0.25)',
+                  color: '#b91c1c',
+                }}
+              >
+                {authMessage}
+              </div>
+            )}
+
+            {/* Voted banner */}
+            {hasVoted && (
+              <div
+                className="mb-6 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium fade-in-up"
+                style={{
+                  background: 'rgba(13, 148, 136, 0.1)',
+                  border: '1px solid rgba(13, 148, 136, 0.3)',
+                  color: 'var(--teal)',
+                }}
+              >
+                <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Your vote has been recorded. Thanks for participating!
+              </div>
+            )}
+
+            {/* Poll list */}
+            <PollList
+              options={options}
+              totalVotes={totalVotes}
+              hasVoted={hasVoted}
+              isSignedIn={Boolean(user)}
+              isLoading={pollLoading}
+              onVote={handleVote}
+              onDelete={handleDeleteOption}
+            />
+
+            {/* Divider */}
+            <div
+              className="my-8 sm:my-10 border-t"
+              style={{ borderColor: 'var(--border)' }}
+            />
+
+            {/* Add option form */}
+            <div>
+              <h3
+                className="font-display font-bold text-lg mb-4"
+                style={{ color: 'var(--ink)' }}
+              >
+                Add an option
+              </h3>
+              <PollForm onAddOption={handleAddOption} options={options} />
+            </div>
+
+            {/* Controls */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                onClick={() => setCurrentPage('history')}
+                className="rounded-2xl p-4 duration-300 bg-green-600 text-white font-semibold transition-all hover:opacity-90 active:scale-95"
+              >
+                View History
+              </button>
+
+              <button
+                onClick={handleFinishPoll}
+                className="rounded-2xl p-4 duration-300 bg-green-600 text-white font-semibold transition-all hover:opacity-90 active:scale-95"
+              >
+                Finish Poll
+              </button>
+
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-2 rounded-2xl p-4 duration-300 text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80 active:scale-95"
+                style={{
+                  background: 'transparent',
+                  border: '1.5px solid var(--border)',
+                  color: '#6b6860',
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Reset All Votes
+              </button>
+            </div>
+          </>
         )}
-
-        {authMessage && (
-          <div
-            className="mb-6 px-4 py-3 rounded-xl text-sm font-medium fade-in-up"
-            style={{
-              background: 'rgba(220, 38, 38, 0.08)',
-              border: '1px solid rgba(220, 38, 38, 0.25)',
-              color: '#b91c1c',
-            }}
-          >
-            {authMessage}
-          </div>
-        )}
-
-        {/* Voted banner */}
-        {hasVoted && (
-          <div
-            className="mb-6 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium fade-in-up"
-            style={{
-              background: 'rgba(13, 148, 136, 0.1)',
-              border: '1px solid rgba(13, 148, 136, 0.3)',
-              color: 'var(--teal)',
-            }}
-          >
-            <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Your vote has been recorded. Thanks for participating!
-          </div>
-        )}
-
-        {/* Poll list */}
-        <PollList
-          options={options}
-          totalVotes={totalVotes}
-          hasVoted={hasVoted}
-          isSignedIn={Boolean(user)}
-          isLoading={pollLoading}
-          onVote={handleVote}
-          onDelete={handleDeleteOption}
-        />
-
-        {/* Divider */}
-        <div
-          className="my-8 sm:my-10 border-t"
-          style={{ borderColor: 'var(--border)' }}
-        />
-
-        {/* Add option form */}
-        <div>
-          <h3
-            className="font-display font-bold text-lg mb-4"
-            style={{ color: 'var(--ink)' }}
-          >
-            Add an option
-          </h3>
-          <PollForm onAddOption={handleAddOption} options={options} />
-        </div>
-
-        {/* Reset button */}
-        <div className="mt-8 flex justify-end">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80 active:scale-95"
-            style={{
-              background: 'transparent',
-              border: '1.5px solid var(--border)',
-              color: '#6b6860',
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-            Reset All Votes
-          </button>
-        </div>
       </main>
 
       {/* Footer */}
