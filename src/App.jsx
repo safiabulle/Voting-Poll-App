@@ -329,9 +329,9 @@ function App() {
             className="font-display font-extrabold text-3xl sm:text-4xl leading-tight mb-2"
             style={{ color: 'var(--ink)' }}
           >
-            What's your favourite
+            Cast your vote!
             <br />
-            <span style={{ color: 'var(--coral)' }}>frontend framework?</span>
+            <span style={{ color: 'var(--coral)' }}></span>
           </h2>
           <p style={{ color: '#6b6860' }} className="text-base sm:text-lg">
             Sign in, then cast your vote below. One vote per account.
