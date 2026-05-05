@@ -14,8 +14,9 @@ function PollForm({ onAddOption, options }) {
   const [inputValue, setInputValue] = useState('')
   const [error, setError]           = useState('')
   const [success, setSuccess]       = useState(false)
+  const [isSaving, setIsSaving]     = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSuccess(false)
@@ -46,11 +47,19 @@ function PollForm({ onAddOption, options }) {
       return
     }
 
-    const added = onAddOption(trimmed)
-    if (added !== false) {
-      setInputValue('')
-      setSuccess(true)
-      setTimeout(() => setSuccess(false), 2500)
+    try {
+      setIsSaving(true)
+      const added = await onAddOption(trimmed)
+
+      if (added !== false) {
+        setInputValue('')
+        setSuccess(true)
+        setTimeout(() => setSuccess(false), 2500)
+      }
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -102,17 +111,19 @@ function PollForm({ onAddOption, options }) {
           {/* Submit button */}
           <button
             type="submit"
+            disabled={isSaving}
             className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all duration-200 cursor-pointer hover:opacity-90 active:scale-95"
             style={{
               background: 'var(--coral)',
               color: '#ffffff',
               whiteSpace: 'nowrap',
+              opacity: isSaving ? 0.65 : 1,
             }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Add Option
+            {isSaving ? 'Adding...' : 'Add Option'}
           </button>
         </div>
 

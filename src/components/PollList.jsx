@@ -9,10 +9,23 @@ import PollOption from './PollOption'
  *  - options   {Array}    List of poll option objects { id, label, votes }
  *  - totalVotes {number}  Sum of all votes (for computing percentages)
  *  - hasVoted  {boolean}  Whether the user has already cast a vote
+ *  - isSignedIn {boolean} Whether the user is signed in
+ *  - isLoading {boolean} Whether poll results are loading
  *  - onVote    {Function} Handler called with option id when Vote is clicked
  *  - onDelete  {Function} Handler called with option id when Delete is clicked
  */
-function PollList({ options, totalVotes, hasVoted, onVote, onDelete }) {
+function PollList({ options, totalVotes, hasVoted, isSignedIn, isLoading, onVote, onDelete }) {
+  if (isLoading) {
+    return (
+      <div
+        className="text-center py-16 rounded-2xl border-2 border-dashed"
+        style={{ borderColor: 'var(--border)', color: '#9c9890' }}
+      >
+        <p className="font-medium">Loading live results...</p>
+      </div>
+    )
+  }
+
   if (options.length === 0) {
     return (
       <div
@@ -50,6 +63,7 @@ function PollList({ options, totalVotes, hasVoted, onVote, onDelete }) {
           option={option}
           totalVotes={totalVotes}
           hasVoted={hasVoted}
+          isSignedIn={isSignedIn}
           isLeader={option.id === leaderId}
           rank={index + 1}
           onVote={onVote}

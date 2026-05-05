@@ -9,12 +9,13 @@ import { useState } from 'react'
  *  - option     {Object}   { id, label, votes }
  *  - totalVotes {number}   Total votes across all options
  *  - hasVoted   {boolean}  If true, Vote button is disabled
+ *  - isSignedIn {boolean}  Whether the user is signed in
  *  - isLeader   {boolean}  Highlights the leading option
  *  - rank       {number}   Rank position (1 = top)
  *  - onVote     {Function} Called with option.id when button is clicked
  * - onDelete   {Function} Called with option.id when delete action is triggered (if implemented)
  */
-function PollOption({ option, totalVotes, hasVoted, isLeader, rank, onVote, onDelete }) {
+function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, onVote, onDelete }) {
   const [justVoted, setJustVoted] = useState(false)
 
   const percentage =
@@ -22,6 +23,11 @@ function PollOption({ option, totalVotes, hasVoted, isLeader, rank, onVote, onDe
 
   const handleVoteClick = () => {
     if (hasVoted) return
+    if (!isSignedIn) {
+      onVote(option.id)
+      return
+    }
+
     setJustVoted(true)
     onVote(option.id)
     // Remove pulse class after animation
@@ -121,17 +127,23 @@ function PollOption({ option, totalVotes, hasVoted, isLeader, rank, onVote, onDe
             }
           `}
           style={{
-            background: hasVoted ? '#e0ddd6' : 'var(--teal)',
-            color: hasVoted ? '#9c9890' : '#ffffff',
+            background: hasVoted || !isSignedIn ? '#e0ddd6' : 'var(--teal)',
+            color: hasVoted || !isSignedIn ? '#9c9890' : '#ffffff',
           }}
-          title={hasVoted ? 'You have already voted' : `Vote for ${option.label}`}
+          title={
+            hasVoted
+              ? 'You have already voted'
+              : isSignedIn
+                ? `Vote for ${option.label}`
+                : 'Sign in before voting'
+          }
         >
           {hasVoted ? (
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           ) : (
-            'Vote'
+            isSignedIn ? 'Vote' : 'Sign in'
           )}
         </button>
         

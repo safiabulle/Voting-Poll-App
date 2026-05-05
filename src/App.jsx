@@ -1,47 +1,121 @@
 import { useState, useEffect } from 'react'
 import PollForm from './components/PollForm'
 import PollList from './components/PollList'
-
-// localStorage keys
-const STORAGE_KEY_OPTIONS = 'votepulse_options'
-const STORAGE_KEY_VOTED = 'votepulse_has_voted'
+import Register from './components/Register'
+import { auth, db } from './firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  increment,
+  onSnapshot,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore'
 
 // Default poll options to seed the app on first load
 const DEFAULT_OPTIONS = [
-  { id: 1, label: 'React', votes: 0 },
-  { id: 2, label: 'Vue', votes: 0 },
-  { id: 3, label: 'Angular', votes: 0 },
-  { id: 4, label: 'Svelte', votes: 0 },
+  { id: 'react', label: 'React', votes: 0 },
+  { id: 'vue', label: 'Vue', votes: 0 },
+  { id: 'angular', label: 'Angular', votes: 0 },
+  { id: 'svelte', label: 'Svelte', votes: 0 },
 ]
 
 function App() {
-  // Load options from localStorage or fall back to defaults
-  const [options, setOptions] = useState(() => {
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authMessage, setAuthMessage] = useState('')
+  const [pollLoading, setPollLoading] = useState(true)
+
+  const [options, setOptions] = useState([])
+
+  // Track whether the signed-in user already voted.
+  const [hasVoted, setHasVoted] = useState(false)
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser)
+      if (!currentUser) setHasVoted(false)
+      setAuthLoading(false)
+    })
+
+    return unsubscribe
+  }, [])
+
+  async function seedDefaultOptions() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_OPTIONS)
-      return saved ? JSON.parse(saved) : DEFAULT_OPTIONS
-    } catch {
-      return DEFAULT_OPTIONS
+      await Promise.all(
+        DEFAULT_OPTIONS.map((option, index) =>
+          setDoc(doc(db, 'pollOptions', option.id), {
+            label: option.label,
+            labelLower: option.label.toLowerCase(),
+            votes: 0,
+            createdAt: index,
+          })
+        )
+      )
+    } catch (error) {
+      setAuthMessage(`Could not create default options: ${error.message}`)
+      setPollLoading(false)
     }
-  })
+  }
 
-  // Track whether the user has already voted (persisted across refreshes)
-  const [hasVoted, setHasVoted] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY_VOTED) === 'true'
-  })
-
-  // Persist options whenever they change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_OPTIONS, JSON.stringify(options))
-  }, [options])
+    const optionsQuery = query(
+      collection(db, 'pollOptions'),
+      orderBy('createdAt', 'asc')
+    )
 
-  // Persist hasVoted whenever it changes
+    const unsubscribe = onSnapshot(
+      optionsQuery,
+      (snapshot) => {
+        if (snapshot.empty) {
+          setOptions([])
+          setPollLoading(false)
+
+          if (!user) {
+            return
+          }
+
+          seedDefaultOptions()
+          return
+        }
+
+        setOptions(
+          snapshot.docs.map((optionDoc) => ({
+            id: optionDoc.id,
+            ...optionDoc.data(),
+          }))
+        )
+        setPollLoading(false)
+      },
+      (error) => {
+        setAuthMessage(`Could not load poll results: ${error.message}`)
+        setPollLoading(false)
+      }
+    )
+
+    return unsubscribe
+  }, [user])
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_VOTED, String(hasVoted))
-  }, [hasVoted])
+    if (!user) return
+
+    const unsubscribe = onSnapshot(doc(db, 'votes', user.uid), (snapshot) => {
+      setHasVoted(snapshot.exists())
+    })
+
+    return unsubscribe
+  }, [user])
 
   // Add a new poll option
-  const handleAddOption = (label) => {
+  const handleAddOption = async (label) => {
     const trimmed = label.trim()
     if (!trimmed) return
 
@@ -51,33 +125,77 @@ function App() {
     )
     if (exists) return false
 
-    const newOption = {
-      id: Date.now(),
+    const newOptionRef = doc(collection(db, 'pollOptions'))
+    await setDoc(newOptionRef, {
       label: trimmed,
+      labelLower: trimmed.toLowerCase(),
       votes: 0,
-    }
-    setOptions((prev) => [...prev, newOption])
+      createdAt: serverTimestamp(),
+    })
+
     return true
   }
 
   // Cast a vote for a specific option
-  const handleVote = (id) => {
+  const handleVote = async (id) => {
+    if (!user) {
+      setAuthMessage('Please sign in before voting.')
+      return
+    }
+
     if (hasVoted) return
-    setOptions((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, votes: o.votes + 1 } : o))
-    )
-    setHasVoted(true)
+
+    setAuthMessage('')
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const voteRef = doc(db, 'votes', user.uid)
+        const optionRef = doc(db, 'pollOptions', id)
+        const existingVote = await transaction.get(voteRef)
+
+        if (existingVote.exists()) {
+          throw new Error('You have already voted.')
+        }
+
+        transaction.update(optionRef, {
+          votes: increment(1),
+        })
+        transaction.set(voteRef, {
+          optionId: id,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+        })
+      })
+    } catch (error) {
+      setAuthMessage(error.message)
+    }
   }
 
   // Delete a specific option
-  const handleDeleteOption = (id) => {
-    setOptions((prev) => prev.filter((o) => o.id !== id))
+  const handleDeleteOption = async (id) => {
+    await deleteDoc(doc(db, 'pollOptions', id))
   }
 
-  // Reset all votes to zero and allow voting again
-  const handleReset = () => {
-    setOptions((prev) => prev.map((o) => ({ ...o, votes: 0 })))
-    setHasVoted(false)
+  // Reset all votes to zero and allow every account to vote again.
+  const handleReset = async () => {
+    const batch = writeBatch(db)
+    const optionDocs = await getDocs(collection(db, 'pollOptions'))
+    const voteDocs = await getDocs(collection(db, 'votes'))
+
+    optionDocs.forEach((optionDoc) => {
+      batch.update(optionDoc.ref, { votes: 0 })
+    })
+
+    voteDocs.forEach((voteDoc) => {
+      batch.delete(voteDoc.ref)
+    })
+
+    await batch.commit()
+  }
+
+  const handleSignOut = async () => {
+    await signOut(auth)
+    setAuthMessage('')
   }
 
   // Compute total votes for percentage calculations
@@ -116,18 +234,30 @@ function App() {
           </div>
 
           {/* Stats pill */}
-          <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
-            style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
-          >
-            <span
-              className="w-2 h-2 rounded-full animate-pulse"
-              style={{ background: 'var(--teal)' }}
-            />
-            <span className="font-medium">{totalVotes}</span>
-            <span style={{ color: 'rgba(255,255,255,0.5)' }}>
-              {totalVotes === 1 ? 'vote' : 'votes'}
-            </span>
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+              style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
+            >
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ background: 'var(--teal)' }}
+              />
+              <span className="font-medium">{totalVotes}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {totalVotes === 1 ? 'vote' : 'votes'}
+              </span>
+            </div>
+
+            {user && (
+              <button
+                onClick={handleSignOut}
+                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80"
+                style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
+              >
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -145,9 +275,28 @@ function App() {
             <span style={{ color: 'var(--coral)' }}>frontend framework?</span>
           </h2>
           <p style={{ color: '#6b6860' }} className="text-base sm:text-lg">
-            Cast your vote below. One vote per session — make it count!
+            Sign in, then cast your vote below. One vote per account.
           </p>
         </div>
+
+        {!authLoading && !user && (
+          <div className="mb-8">
+            <Register />
+          </div>
+        )}
+
+        {authMessage && (
+          <div
+            className="mb-6 px-4 py-3 rounded-xl text-sm font-medium fade-in-up"
+            style={{
+              background: 'rgba(220, 38, 38, 0.08)',
+              border: '1px solid rgba(220, 38, 38, 0.25)',
+              color: '#b91c1c',
+            }}
+          >
+            {authMessage}
+          </div>
+        )}
 
         {/* Voted banner */}
         {hasVoted && (
@@ -171,6 +320,8 @@ function App() {
           options={options}
           totalVotes={totalVotes}
           hasVoted={hasVoted}
+          isSignedIn={Boolean(user)}
+          isLoading={pollLoading}
           onVote={handleVote}
           onDelete={handleDeleteOption}
         />

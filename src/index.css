@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #000000;
+  --ink: #053644;
   --cream: #fffcf2;
   --coral: #000000;
   --teal: #0a9e17;
-  --gold: #e8a628;
+  --gold: #827d75;
   --soft-bg: #faf8f3;
   --card-bg: #ffffff;
   --border: #e8e4da;
