@@ -1,15 +1,5 @@
 import { useState } from 'react'
 
-/**
- * PollForm
- * Controlled form that lets users add a new poll option.
- * The actual data mutation happens in App.jsx via the onAddOption prop.
- *
- * Props:
- *  - onAddOption {Function} Called with the new option label string.
- *                           Returns true on success, false if duplicate.
- *  - options     {Array}    Existing options (used for duplicate check feedback)
- */
 function PollForm({ onAddOption, options }) {
   const [inputValue, setInputValue] = useState('')
   const [error, setError]           = useState('')
@@ -38,7 +28,6 @@ function PollForm({ onAddOption, options }) {
       return
     }
 
-    // Check for duplicates (case-insensitive)
     const isDuplicate = options.some(
       (o) => o.label.toLowerCase() === trimmed.toLowerCase()
     )
@@ -67,7 +56,6 @@ function PollForm({ onAddOption, options }) {
     <div>
       <form onSubmit={handleSubmit} noValidate>
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Text input */}
           <div className="flex-1 relative">
             <input
               type="text"
@@ -99,7 +87,6 @@ function PollForm({ onAddOption, options }) {
               aria-describedby={error ? 'form-error' : undefined}
             />
 
-            {/* Character counter */}
             <span
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none"
               style={{ color: inputValue.length > 35 ? 'var(--coral)' : '#c0bdb4' }}
@@ -108,7 +95,6 @@ function PollForm({ onAddOption, options }) {
             </span>
           </div>
 
-          {/* Submit button */}
           <button
             type="submit"
             disabled={isSaving}
@@ -127,7 +113,6 @@ function PollForm({ onAddOption, options }) {
           </button>
         </div>
 
-        {/* Error message */}
         {error && (
           <p
             id="form-error"
@@ -141,7 +126,6 @@ function PollForm({ onAddOption, options }) {
           </p>
         )}
 
-        {/* Success message */}
         {success && (
           <p
             className="mt-2 text-sm flex items-center gap-1.5 fade-in-up"
@@ -155,7 +139,6 @@ function PollForm({ onAddOption, options }) {
         )}
       </form>
 
-      {/* Current option count hint */}
       <p className="mt-3 text-xs" style={{ color: '#b0ada6' }}>
         {options.length} {options.length === 1 ? 'option' : 'options'} in the poll
       </p>

@@ -26,7 +26,6 @@ h1, h2, h3, .font-display {
   font-family: 'Syne', sans-serif;
 }
 
-/* Progress bar animation */
 @keyframes fillBar {
   from { width: 0%; }
   to { width: var(--target-width); }
@@ -36,7 +35,6 @@ h1, h2, h3, .font-display {
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Vote button pulse */
 @keyframes votePulse {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -47,7 +45,6 @@ h1, h2, h3, .font-display {
   animation: votePulse 0.3s ease-in-out;
 }
 
-/* Fade in card */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -63,7 +60,6 @@ h1, h2, h3, .font-display {
   animation: fadeInUp 0.4s ease-out forwards;
 }
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
 }

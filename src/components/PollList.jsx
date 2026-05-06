@@ -1,19 +1,5 @@
 import PollOption from './PollOption'
 
-/**
- * PollList
- * Renders the list of all poll options.
- * Receives options data and handlers via props — no local state.
- *
- * Props:
- *  - options   {Array}    List of poll option objects { id, label, votes }
- *  - totalVotes {number}  Sum of all votes (for computing percentages)
- *  - hasVoted  {boolean}  Whether the user has already cast a vote
- *  - isSignedIn {boolean} Whether the user is signed in
- *  - isLoading {boolean} Whether poll results are loading
- *  - onVote    {Function} Handler called with option id when Vote is clicked
- *  - onDelete  {Function} Handler called with option id when Delete is clicked
- */
 function PollList({ options, totalVotes, hasVoted, isSignedIn, isLoading, onVote, onDelete }) {
   if (isLoading) {
     return (
@@ -51,7 +37,6 @@ function PollList({ options, totalVotes, hasVoted, isSignedIn, isLoading, onVote
     )
   }
 
-  // Sort by votes descending for a live leaderboard feel
   const sorted = [...options].sort((a, b) => b.votes - a.votes)
   const leaderId = sorted[0]?.votes > 0 ? sorted[0].id : null
 

@@ -21,7 +21,6 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 
-// Default poll options to seed the app on first load
 const DEFAULT_OPTIONS = [
   { id: 'react', label: 'React', votes: 0 },
   { id: 'vue', label: 'Vue', votes: 0 },
@@ -50,7 +49,6 @@ function App() {
   })
   const navigate = useNavigate()
 
-  // Track whether the signed-in user already voted.
   const [hasVoted, setHasVoted] = useState(false)
 
   useEffect(() => {
@@ -129,12 +127,10 @@ function App() {
     return unsubscribe
   }, [user])
 
-  // Add a new poll option
   const handleAddOption = async (label) => {
     const trimmed = label.trim()
     if (!trimmed) return
 
-    // Prevent duplicates (case-insensitive)
     const exists = options.some(
       (o) => o.label.toLowerCase() === trimmed.toLowerCase()
     )
@@ -151,7 +147,6 @@ function App() {
     return true
   }
 
-  // Cast a vote for a specific option
   const handleVote = async (id) => {
     if (!user) {
       setAuthMessage('Please sign in before voting.')
@@ -186,12 +181,10 @@ function App() {
     }
   }
 
-  // Delete a specific option
   const handleDeleteOption = async (id) => {
     await deleteDoc(doc(db, 'pollOptions', id))
   }
 
-  // Reset all votes to zero and allow every account to vote again.
   const handleReset = async () => {
     const batch = writeBatch(db)
     const optionDocs = await getDocs(collection(db, 'pollOptions'))
@@ -248,12 +241,10 @@ function App() {
     setAuthMessage('')
   }
 
-  // Compute total votes for percentage calculations
   const totalVotes = options.reduce((sum, o) => sum + o.votes, 0)
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--soft-bg)' }}>
-      {/* Header */}
       <header
         className="sticky top-0 z-10 border-b"
         style={{
@@ -263,7 +254,6 @@ function App() {
       >
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo mark */}
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-display font-800 text-lg"
               style={{ background: 'var(--gold)' }}
@@ -283,7 +273,6 @@ function App() {
             </div>
           </div>
 
-          {/* Stats pill */}
           <div className="flex items-center gap-3">
             <div
               className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
@@ -321,9 +310,7 @@ function App() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Hero text */}
         <div className="mb-8 sm:mb-10">
           <h2
             className="font-display font-extrabold text-3xl sm:text-4xl leading-tight mb-2"
@@ -362,7 +349,6 @@ function App() {
                   </div>
                 )}
 
-                {/* Voted banner */}
                 {hasVoted && (
                   <div
                     className="mb-6 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium fade-in-up"
@@ -379,7 +365,6 @@ function App() {
                   </div>
                 )}
 
-                {/* Poll list */}
                 <PollList
                   options={options}
                   totalVotes={totalVotes}
@@ -390,13 +375,11 @@ function App() {
                   onDelete={handleDeleteOption}
                 />
 
-                {/* Divider */}
                 <div
                   className="my-8 sm:my-10 border-t"
                   style={{ borderColor: 'var(--border)' }}
                 />
 
-                {/* Add option form */}
                 <div>
                   <h3
                     className="font-display font-bold text-lg mb-4"
@@ -407,7 +390,6 @@ function App() {
                   <PollForm onAddOption={handleAddOption} options={options} />
                 </div>
 
-                {/* Controls */}
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <Link
                     to="/history"
@@ -446,7 +428,6 @@ function App() {
         </Routes>
       </main>
 
-      {/* Footer */}
       <footer
         className="mt-16 py-6 border-t text-center text-sm"
         style={{ borderColor: 'var(--border)', color: '#9c9890' }}

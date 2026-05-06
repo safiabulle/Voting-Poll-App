@@ -1,20 +1,5 @@
 import { useState } from 'react'
 
-/**
- * PollOption
- * Displays a single poll option with its vote count, progress bar, and vote button.
- * No state is managed here — all data flows in via props.
- *
- * Props:
- *  - option     {Object}   { id, label, votes }
- *  - totalVotes {number}   Total votes across all options
- *  - hasVoted   {boolean}  If true, Vote button is disabled
- *  - isSignedIn {boolean}  Whether the user is signed in
- *  - isLeader   {boolean}  Highlights the leading option
- *  - rank       {number}   Rank position (1 = top)
- *  - onVote     {Function} Called with option.id when button is clicked
- * - onDelete   {Function} Called with option.id when delete action is triggered (if implemented)
- */
 function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, onVote, onDelete }) {
   const [justVoted, setJustVoted] = useState(false)
 
@@ -30,7 +15,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
 
     setJustVoted(true)
     onVote(option.id)
-    // Remove pulse class after animation
     setTimeout(() => setJustVoted(false), 400)
   }
 
@@ -50,7 +34,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
       }}
     >
       <div className="flex items-center gap-3 sm:gap-4">
-        {/* Rank badge */}
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-display font-bold shrink-0"
           style={{
@@ -61,7 +44,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
           {rank}
         </div>
 
-        {/* Label + bar */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2 gap-2">
             <span
@@ -82,7 +64,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
               )}
             </span>
 
-            {/* Vote count + percentage */}
             <div className="text-right shrink-0">
               <span
                 className="font-display font-bold text-base sm:text-lg"
@@ -96,7 +77,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
             </div>
           </div>
 
-          {/* Progress bar */}
           <div
             className="w-full rounded-full overflow-hidden"
             style={{ height: '8px', background: '#f0ede6' }}
@@ -113,7 +93,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
           </div>
         </div>
 
-        {/* Vote button */}
         <button
           onClick={handleVoteClick}
           disabled={hasVoted}
@@ -147,7 +126,6 @@ function PollOption({ option, totalVotes, hasVoted, isSignedIn, isLeader, rank, 
           )}
         </button>
         
-        {/* Delete button (optional, can be implemented if onDelete is provided) */}
         {onDelete && (
           <button
             onClick={() => onDelete(option.id)}
