@@ -1,0 +1,460 @@
+import { useState, useEffect } from 'react'
+import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import PollForm from './components/PollForm'
+import PollList from './components/PollList'
+import History from './components/History'
+import Register from './components/Register'
+import { auth, db } from './firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  increment,
+  onSnapshot,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore'
+
+// Default poll options to seed the app on first load
+const DEFAULT_OPTIONS = [
+  { id: 'react', label: 'React', votes: 0 },
+  { id: 'vue', label: 'Vue', votes: 0 },
+  { id: 'angular', label: 'Angular', votes: 0 },
+  { id: 'svelte', label: 'Svelte', votes: 0 },
+]
+
+function App() {
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authMessage, setAuthMessage] = useState('')
+  const [pollLoading, setPollLoading] = useState(true)
+
+  const [options, setOptions] = useState([])
+  const [history, setHistory] = useState(() => {
+    const storedHistory = localStorage.getItem('votePollAppHistory')
+
+    if (!storedHistory) return []
+
+    try {
+      return JSON.parse(storedHistory)
+    } catch (error) {
+      console.warn('Could not parse stored history', error)
+      return []
+    }
+  })
+  const navigate = useNavigate()
+
+  // Track whether the signed-in user already voted.
+  const [hasVoted, setHasVoted] = useState(false)
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser)
+      if (!currentUser) setHasVoted(false)
+      setAuthLoading(false)
+    })
+
+    return unsubscribe
+  }, [])
+
+  async function seedDefaultOptions() {
+    try {
+      await Promise.all(
+        DEFAULT_OPTIONS.map((option, index) =>
+          setDoc(doc(db, 'pollOptions', option.id), {
+            label: option.label,
+            labelLower: option.label.toLowerCase(),
+            votes: 0,
+            createdAt: index,
+          })
+        )
+      )
+    } catch (error) {
+      setAuthMessage(`Could not create default options: ${error.message}`)
+      setPollLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const optionsQuery = query(
+      collection(db, 'pollOptions'),
+      orderBy('createdAt', 'asc')
+    )
+
+    const unsubscribe = onSnapshot(
+      optionsQuery,
+      (snapshot) => {
+        if (snapshot.empty) {
+          setOptions([])
+          setPollLoading(false)
+
+          if (!user) {
+            return
+          }
+
+          seedDefaultOptions()
+          return
+        }
+
+        setOptions(
+          snapshot.docs.map((optionDoc) => ({
+            id: optionDoc.id,
+            ...optionDoc.data(),
+          }))
+        )
+        setPollLoading(false)
+      },
+      (error) => {
+        setAuthMessage(`Could not load poll results: ${error.message}`)
+        setPollLoading(false)
+      }
+    )
+
+    return unsubscribe
+  }, [user])
+
+  useEffect(() => {
+    if (!user) return
+
+    const unsubscribe = onSnapshot(doc(db, 'votes', user.uid), (snapshot) => {
+      setHasVoted(snapshot.exists())
+    })
+
+    return unsubscribe
+  }, [user])
+
+  // Add a new poll option
+  const handleAddOption = async (label) => {
+    const trimmed = label.trim()
+    if (!trimmed) return
+
+    // Prevent duplicates (case-insensitive)
+    const exists = options.some(
+      (o) => o.label.toLowerCase() === trimmed.toLowerCase()
+    )
+    if (exists) return false
+
+    const newOptionRef = doc(collection(db, 'pollOptions'))
+    await setDoc(newOptionRef, {
+      label: trimmed,
+      labelLower: trimmed.toLowerCase(),
+      votes: 0,
+      createdAt: serverTimestamp(),
+    })
+
+    return true
+  }
+
+  // Cast a vote for a specific option
+  const handleVote = async (id) => {
+    if (!user) {
+      setAuthMessage('Please sign in before voting.')
+      return
+    }
+
+    if (hasVoted) return
+
+    setAuthMessage('')
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const voteRef = doc(db, 'votes', user.uid)
+        const optionRef = doc(db, 'pollOptions', id)
+        const existingVote = await transaction.get(voteRef)
+
+        if (existingVote.exists()) {
+          throw new Error('You have already voted.')
+        }
+
+        transaction.update(optionRef, {
+          votes: increment(1),
+        })
+        transaction.set(voteRef, {
+          optionId: id,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+        })
+      })
+    } catch (error) {
+      setAuthMessage(error.message)
+    }
+  }
+
+  // Delete a specific option
+  const handleDeleteOption = async (id) => {
+    await deleteDoc(doc(db, 'pollOptions', id))
+  }
+
+  // Reset all votes to zero and allow every account to vote again.
+  const handleReset = async () => {
+    const batch = writeBatch(db)
+    const optionDocs = await getDocs(collection(db, 'pollOptions'))
+    const voteDocs = await getDocs(collection(db, 'votes'))
+
+    optionDocs.forEach((optionDoc) => {
+      batch.update(optionDoc.ref, { votes: 0 })
+    })
+
+    voteDocs.forEach((voteDoc) => {
+      batch.delete(voteDoc.ref)
+    })
+
+    await batch.commit()
+  }
+
+  const handleFinishPoll = async () => {
+    if (options.length === 0) {
+      setAuthMessage('No poll options available to finish.')
+      return
+    }
+
+    const sortedOptions = [...options].sort((a, b) => b.votes - a.votes)
+    const winner = sortedOptions[0]
+
+    if (!winner) {
+      setAuthMessage('Unable to determine the winner.')
+      return
+    }
+
+    const winnerRecord = {
+      title: 'Frontend Framework Poll',
+      winnerName: winner.label,
+      timestamp: Date.now(),
+    }
+
+    try {
+      setAuthMessage('')
+      setHistory((previousHistory) => {
+        const nextHistory = [winnerRecord, ...previousHistory]
+        localStorage.setItem('votePollAppHistory', JSON.stringify(nextHistory))
+        return nextHistory
+      })
+      await handleReset()
+      setHasVoted(false)
+      navigate('/history')
+    } catch (error) {
+      setAuthMessage(error.message || 'Could not finish the poll.')
+    }
+  }
+
+  const handleSignOut = async () => {
+    await signOut(auth)
+    setAuthMessage('')
+  }
+
+  // Compute total votes for percentage calculations
+  const totalVotes = options.reduce((sum, o) => sum + o.votes, 0)
+
+  return (
+    <div className="min-h-screen" style={{ background: 'var(--soft-bg)' }}>
+      {/* Header */}
+      <header
+        className="sticky top-0 z-10 border-b"
+        style={{
+          background: 'var(--ink)',
+          borderColor: 'rgba(255,255,255,0.08)',
+        }}
+      >
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Logo mark */}
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-display font-800 text-lg"
+              style={{ background: 'var(--gold)' }}
+            >
+              V
+            </div>
+            <div>
+              <h1
+                className="font-display font-bold text-xl leading-none"
+                style={{ color: 'var(--cream)' }}
+              >
+                VotePulse
+              </h1>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                Live Community Poll
+              </p>
+            </div>
+          </div>
+
+          {/* Stats pill */}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+              style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
+            >
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ background: 'var(--teal)' }}
+              />
+              <span className="font-medium">{totalVotes}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {totalVotes === 1 ? 'vote' : 'votes'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link
+                to="/history"
+                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80"
+                style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
+              >
+                History
+              </Link>
+              {user && (
+                <button
+                  onClick={handleSignOut}
+                  className="px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--cream)' }}
+                >
+                  Sign out
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* Hero text */}
+        <div className="mb-8 sm:mb-10">
+          <h2
+            className="font-display font-extrabold text-3xl sm:text-4xl leading-tight mb-2"
+            style={{ color: 'var(--ink)' }}
+          >
+            Cast your vote!
+            <br />
+            <span style={{ color: 'var(--coral)' }}></span>
+          </h2>
+          <p style={{ color: '#6b6860' }} className="text-base sm:text-lg">
+            Sign in, then cast your vote below. One vote per account.
+          </p>
+        </div>
+
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                {!authLoading && !user && (
+                  <div className="mb-8">
+                    <Register />
+                  </div>
+                )}
+
+                {authMessage && (
+                  <div
+                    className="mb-6 px-4 py-3 rounded-xl text-sm font-medium fade-in-up"
+                    style={{
+                      background: 'rgba(220, 38, 38, 0.08)',
+                      border: '1px solid rgba(220, 38, 38, 0.25)',
+                      color: '#b91c1c',
+                    }}
+                  >
+                    {authMessage}
+                  </div>
+                )}
+
+                {/* Voted banner */}
+                {hasVoted && (
+                  <div
+                    className="mb-6 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium fade-in-up"
+                    style={{
+                      background: 'rgba(13, 148, 136, 0.1)',
+                      border: '1px solid rgba(13, 148, 136, 0.3)',
+                      color: 'var(--teal)',
+                    }}
+                  >
+                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Your vote has been recorded. Thanks for participating!
+                  </div>
+                )}
+
+                {/* Poll list */}
+                <PollList
+                  options={options}
+                  totalVotes={totalVotes}
+                  hasVoted={hasVoted}
+                  isSignedIn={Boolean(user)}
+                  isLoading={pollLoading}
+                  onVote={handleVote}
+                  onDelete={handleDeleteOption}
+                />
+
+                {/* Divider */}
+                <div
+                  className="my-8 sm:my-10 border-t"
+                  style={{ borderColor: 'var(--border)' }}
+                />
+
+                {/* Add option form */}
+                <div>
+                  <h3
+                    className="font-display font-bold text-lg mb-4"
+                    style={{ color: 'var(--ink)' }}
+                  >
+                    Add an option
+                  </h3>
+                  <PollForm onAddOption={handleAddOption} options={options} />
+                </div>
+
+                {/* Controls */}
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <Link
+                    to="/history"
+                    className="rounded-2xl p-4 duration-300 bg-green-600 text-white font-semibold transition-all hover:opacity-90 active:scale-95"
+                  >
+                    View History
+                  </Link>
+
+                  <button
+                    onClick={handleFinishPoll}
+                    className="rounded-2xl p-4 duration-300 bg-green-600 text-white font-semibold transition-all hover:opacity-90 active:scale-95"
+                  >
+                    Finish Poll
+                  </button>
+
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-2 rounded-2xl p-4 duration-300 text-sm font-medium transition-all duration-200 cursor-pointer hover:opacity-80 active:scale-95"
+                    style={{
+                      background: 'transparent',
+                      border: '1.5px solid var(--border)',
+                      color: '#6b6860',
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                    Reset All Votes
+                  </button>
+                </div>
+              </>
+            }
+          />
+          <Route path="/history" element={<History history={history} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+
+      {/* Footer */}
+      <footer
+        className="mt-16 py-6 border-t text-center text-sm"
+        style={{ borderColor: 'var(--border)', color: '#9c9890' }}
+      >
+        Built with React + Vite + Tailwind CSS
+      </footer>
+    </div>
+  )
+}
+
+export default App
